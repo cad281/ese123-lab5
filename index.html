@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Lab 5 Capacitors &amp; Scope</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column, each lab section = explanation + a live instrument panel (scope screens stay dark like the real DSO-X) */
+:root{
+  --bg:#eceff3; --panel:#ffffff; --ink:#17212b; --muted:#56636f; --line:#d2d8df;
+  --accent:#1d5bb8; --accent-soft:#dfe8f7; --warn:#b4480f; --warn-soft:#fbe9df; --ok:#17803d;
+  --ch1:#a87b00; --ch2:#11804a;
+  --scr:#0a1017; --grid:#26323f; --grid2:#3a4858; --c1s:#f3d417; --c2s:#3ddc6f; --curs:#e8eef5; --hl:rgba(120,180,255,.20); --part:rgba(255,140,60,.22);
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1319; --panel:#151c24; --ink:#e4e9ee; --muted:#97a3af; --line:#2a343f;
+  --accent:#74a9ff; --accent-soft:#1b2a40; --warn:#ff9a62; --warn-soft:#3a2216; --ok:#4fd27f;
+  --ch1:#f2cf4a; --ch2:#4fdc86; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1319; --panel:#151c24; --ink:#e4e9ee; --muted:#97a3af; --line:#2a343f;
+  --accent:#74a9ff; --accent-soft:#1b2a40; --warn:#ff9a62; --warn-soft:#3a2216; --ok:#4fd27f;
+  --ch1:#f2cf4a; --ch2:#4fdc86; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:920px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);line-height:1.12;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.2rem,6vw,3.4rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(1.6rem,4vw,2.1rem);font-weight:700}
+h3{font-size:1.25rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+header.hero{padding-block:40px 24px;display:grid;gap:14px}
+.hero .lede{font-size:1.1rem;color:var(--muted)}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+nav.toc a{font-family:var(--f-mono);font-size:.8rem;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--panel);padding:6px 10px;border-radius:6px}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:var(--accent);color:var(--accent)}
+section.lab{padding-block:40px 8px;border-top:1px solid var(--line);display:grid;gap:18px}
+.steps-tag{font-family:var(--f-mono);font-size:.78rem;color:var(--accent)}
+.stack{display:grid;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0}
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+canvas.scope{width:100%;aspect-ratio:10/8;display:block;border-radius:6px;background:var(--scr)}
+canvas.plot{width:100%;aspect-ratio:16/9;display:block}
+canvas.wide{width:100%;aspect-ratio:3/1;display:block;border-radius:6px;background:var(--scr)}
+.bezel{background:#1c232c;border-radius:10px;padding:10px;display:grid;gap:8px}
+.bezel .strip{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--f-mono);font-size:.78rem;color:#c9d3dd}
+.strip .c1{color:#f3d417}.strip .c2{color:#3ddc6f}
+.ctrls{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.ctrls label{display:grid;gap:4px;font-size:.8rem;color:var(--muted);font-family:var(--f-mono)}
+select,input[type=number]{font:inherit;font-family:var(--f-mono);font-size:.9rem;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+button{font:inherit;font-size:.88rem;font-family:var(--f-mono);padding:7px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.on{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+button.key{background:#2b3440;color:#e7edf3;border-color:#3d4855}
+button.key.auto{background:#3b6fd1;border-color:#3b6fd1}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.readout{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-family:var(--f-mono);font-size:.88rem;font-variant-numeric:tabular-nums}
+.readout dt{color:var(--muted)}.readout dd{margin:0}
+.readout .hot{color:var(--accent);font-weight:600}
+.msg{font-size:.9rem;padding:10px 12px;border-radius:8px;background:var(--accent-soft)}
+.msg.warn{background:var(--warn-soft);color:var(--ink);border-left:3px solid var(--warn)}
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.why .panel h3{font-size:1.08rem}
+.why .panel p{font-size:.95rem}
+.formula{font-family:var(--f-mono);font-size:1.15rem;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px dashed var(--line);overflow-x:auto}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+tr.cur td{background:var(--accent-soft)}
+.freqs{display:flex;flex-wrap:wrap;gap:6px}
+.freqs button{padding:5px 9px;font-size:.8rem}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:12px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+svg text{font-family:var(--f-mono)}
+.schem .wire{stroke:var(--ink);stroke-width:2;fill:none}
+.schem .lbl{fill:var(--ink);font-size:11px}
+.schem .sub{fill:var(--muted);font-size:10px}
+.schem .p1{fill:var(--ch1);font-size:11px;font-weight:600}
+.schem .p2{fill:var(--ch2);font-size:11px;font-weight:600}
+.parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.part{display:grid;gap:4px;justify-items:start;text-align:left;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);font-family:var(--f-body);font-size:.85rem}
+.part.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.part b{font-family:var(--f-mono);font-size:.8rem}
+.part svg{width:100%;height:40px}
+.detail{display:grid;gap:8px}
+ol.flow{margin:0;padding-left:1.3em;display:grid;gap:6px;max-width:68ch}
+.small{font-size:.86rem;color:var(--muted)}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.75rem;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">ESE 123 · Laboratory 5 · TA walkthrough</div>
+  <h1>Capacitors &amp; the Oscilloscope</h1>
+  <p class="lede">A step-by-step visual guide to what you do in Lab 5 and why you see what you see: reading the scope three ways, sweeping a capacitor filter from 3&nbsp;kHz down to 1&nbsp;Hz, building the board, and checking DC voltages with the DMM. Every screen below is a live simulation of the lab circuit, so you can predict your readings before you take them.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#screen">1 · Reading the screen</a>
+    <a href="#measure">2 · Three ways to measure</a>
+    <a href="#cap">3 · What a capacitor does</a>
+    <a href="#sweep">4 · Frequency sweep</a>
+    <a href="#build">5 · Building the board</a>
+    <a href="#dc">6 · DC check with the DMM</a>
+  </nav>
+</header>
+
+<!-- 1 -->
+<section class="lab" id="screen">
+  <div class="steps-tag">Handout steps 1–6</div>
+  <h2>1 · Reading the scope screen by counting boxes</h2>
+  <p>The screen is a grid: <b>10 divisions across</b> (time) and <b>8 divisions tall</b> (voltage). Every reading starts from two knob settings: <b>volts per division</b> (vertical) and <b>time per division</b> (horizontal). Counting boxes means: <span class="mono">value = number of boxes × setting</span>. Change the knobs below and watch the same 900&nbsp;Hz wave get taller, shorter, wider or narrower. The signal never changes; only your view of it does.</p>
+  <div class="two">
+    <div class="bezel">
+      <canvas class="scope" id="cv1" aria-label="Simulated scope screen showing a 900 Hz sine wave with box counting"></canvas>
+      <div class="strip"><span class="c1" id="s1ch">CH1 1.00 V/div</span><span id="s1tb">200 µs/div</span><span>Sine 900 Hz</span></div>
+    </div>
+    <div class="panel">
+      <div class="ctrls">
+        <label for="s1v">Volts/div (CH1)<select id="s1v"></select></label>
+        <label for="s1t">Time/div<select id="s1t"></select></label>
+        <button id="s1count" type="button">Count again</button>
+      </div>
+      <dl class="readout" id="s1out"></dl>
+      <div class="msg" id="s1msg"></div>
+      <p class="small">Each box has 5 small tick marks, so by eye you can read to about ±0.1–0.2 of a box. That is why counting boxes is the least precise of the three methods.</p>
+    </div>
+  </div>
+  <div class="why">
+    <div class="panel"><h3>Why the scope reads 2 V rms when you asked for 1 V rms</h3>
+      <svg viewBox="0 0 280 110" class="schem" role="img" aria-label="Function generator with 50 ohm internal resistance driving a high impedance circuit">
+        <circle cx="40" cy="60" r="18" class="wire"/><path d="M30 60 q5 -10 10 0 t10 0" class="wire"/>
+        <path class="wire" d="M40 42 V20 H70 l4 -6 8 12 8 -12 8 12 8 -12 4 6 H200 V40"/>
+        <path class="wire" d="M40 78 V100 H200 V80"/>
+        <rect x="186" y="40" width="28" height="40" rx="3" class="wire"/>
+        <text x="72" y="44" class="lbl">50 Ω inside</text>
+        <text x="220" y="56" class="lbl">our circuit</text><text x="220" y="70" class="sub">≈155 kΩ</text>
+        <text x="8" y="14" class="sub">generator: 2 V rms open-circuit</text>
+      </svg>
+      <p>The generator assumes a 50&nbsp;Ω load and splits its voltage half-and-half with its own 50&nbsp;Ω. Our circuit is about 155&nbsp;kΩ, so almost nothing is lost inside and you see the full open-circuit voltage: <b>2 × 1 V rms = 2 V rms ≈ 5.66 Vpp</b>.</p></div>
+    <div class="panel"><h3>The numbers to expect at <span class="mono">top</span></h3>
+      <dl class="readout">
+        <dt>Vrms</dt><dd>≈ 2.00 V</dd>
+        <dt>Vpeak</dt><dd>2 × √2 ≈ 2.83 V</dd>
+        <dt>Vpp</dt><dd>2 × 2.83 ≈ 5.66 V</dd>
+        <dt>Period</dt><dd>1 / 900 Hz ≈ 1.111 ms</dd>
+      </dl>
+      <p class="small">Good settings: 1 V/div shows 5.7 boxes tall; 200 µs/div shows 5.6 boxes per period.</p></div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="lab" id="measure">
+  <div class="steps-tag">Handout steps 5–8.7</div>
+  <h2>2 · Three ways to measure the same wave</h2>
+  <p>You measure Vpp, period and frequency three times. The answers should agree within a few percent; what changes is how precise and how fast each method is. Pick a method to watch it work.</p>
+  <div class="tabs" role="tablist">
+    <button type="button" class="on" data-m="boxes">Counting boxes</button>
+    <button type="button" data-m="cursors">Cursors (manual)</button>
+    <button type="button" data-m="auto">Automatic (Meas)</button>
+  </div>
+  <div class="two">
+    <div class="bezel">
+      <canvas class="scope" id="cv2" aria-label="Scope screen demonstrating the selected measurement method"></canvas>
+      <div class="strip"><span class="c1">CH1 1.00 V/div</span><span>200 µs/div</span><span id="s2mode">Counting boxes</span></div>
+    </div>
+    <div class="panel">
+      <div class="msg" id="s2step"></div>
+      <dl class="readout" id="s2out"></dl>
+      <p class="small" id="s2note"></p>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>What goes in your Question 1 table, and why the columns differ</h3>
+    <div class="tblwrap"><table>
+      <thead><tr><th></th><th>Counting boxes</th><th>Cursors</th><th>Automatic</th></tr></thead>
+      <tbody>
+        <tr><td>Vpp</td><td class="num">≈ 5.6 V</td><td class="num">≈ 5.66 V</td><td class="num">≈ 5.66 V</td></tr>
+        <tr><td>Period</td><td class="num">≈ 1.12 ms</td><td class="num">≈ 1.111 ms</td><td class="num">≈ 1.111 ms</td></tr>
+        <tr><td>Frequency</td><td class="num">≈ 893 Hz (calculated)</td><td class="num">≈ 900 Hz (1/ΔX)</td><td class="num">≈ 900 Hz</td></tr>
+        <tr><td>Limited by</td><td>your eye, ±0.2 box</td><td>where you park the cursor</td><td>what is on screen (needs ≥1 full cycle)</td></tr>
+      </tbody>
+    </table></div>
+    <p class="small">These are ideal values; yours will differ slightly. The scope itself is only ±2% accurate in voltage, so a DMM is better for precise DC, but the scope shows the shape, timing and phase that a DMM cannot.</p>
+  </div>
+  <div class="two">
+    <div class="bezel">
+      <canvas class="scope" id="cv2b" aria-label="Scope screen comparing full-screen and N-cycle average"></canvas>
+      <div class="strip"><span class="c1">CH1</span><span id="s2bstrip"></span></div>
+    </div>
+    <div class="panel">
+      <h3>Why “N Cycles” matters: Avg-FS vs Avg-Cyc</h3>
+      <p>A sine wave averages to zero over whole cycles. If the screen shows 2.5 cycles, the <b>full-screen</b> average also counts the leftover half cycle (orange) and comes out wrong. The <b>N Cycles</b> version uses only whole cycles. Slide to change how many cycles fit on screen.</p>
+      <label class="small mono" for="s2bp">Cycles on screen: <span id="s2bpv">2.50</span></label>
+      <input type="range" id="s2bp" min="1.5" max="3.5" step="0.05" value="2.5">
+      <dl class="readout" id="s2bout"></dl>
+      <p class="small">Same idea for AC RMS – N Cycles in step 8.7: it ignores the partial cycle at the edge of the screen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="lab" id="cap">
+  <div class="steps-tag">Pre-lab 5 · the physics behind steps 9–21</div>
+  <h2>3 · What a capacitor does to a sine wave</h2>
+  <p>A capacitor stores charge. Pushing charge in takes time, so how a capacitor behaves depends on how fast the voltage is changing, which is the frequency. Its “AC resistance” is called <b>reactance</b>:</p>
+  <div class="formula">X<sub>C</sub> = 1 / (2π · f · C)</div>
+  <div class="two">
+    <div class="panel">
+      <canvas class="plot" id="cv3" aria-label="Log-log plot of capacitor reactance versus frequency"></canvas>
+      <div class="legend"><span><i class="sw" style="background:var(--accent)"></i>X<sub>C</sub> of selected capacitor</span><span><i class="sw" style="background:var(--warn)"></i>R1 = 150 kΩ</span></div>
+    </div>
+    <div class="panel">
+      <div class="ctrls">
+        <label for="s3c">Capacitor<select id="s3c">
+          <option value="1e-9">1 nF (C9, “102”)</option>
+          <option value="1e-7" selected>100 nF (C1/C7, “104”)</option>
+          <option value="1e-5">10 µF (C1 board, “106”)</option>
+          <option value="4.7e-4">470 µF (C2, can)</option>
+        </select></label>
+      </div>
+      <label class="small mono" for="s3f">Frequency: <span id="s3fv"></span></label>
+      <input type="range" id="s3f" min="0" max="6" step="0.01" value="1">
+      <dl class="readout" id="s3out"></dl>
+      <div class="msg" id="s3msg"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>What the formula tells you</h3>
+    <ul class="small" style="margin:0;padding-left:1.2em;display:grid;gap:4px;color:var(--ink)">
+      <li><b>f is in the bottom:</b> double the frequency and X<sub>C</sub> halves. On the log plot that is a straight line sloping down.</li>
+      <li><b>DC (f = 0):</b> X<sub>C</sub> is infinite, so a capacitor <b>blocks DC</b> like an open switch.</li>
+      <li><b>High f:</b> X<sub>C</sub> gets tiny, so a capacitor <b>passes fast signals</b> like a plain wire.</li>
+      <li><b>C is in the bottom too:</b> a bigger capacitor is a “wire” at lower frequencies. That is why 470 µF handles slow power dips and 100 nF handles fast ones.</li>
+      <li><b>Crossover:</b> where X<sub>C</sub> = R, so f = 1/(2πRC). For 150 kΩ and 100 nF that is about <b>10.6 Hz</b>. Remember this number for Section 4.</li>
+    </ul>
+  </div>
+  <div class="two">
+    <div class="bezel">
+      <canvas class="scope" id="cv3b" aria-label="Animation of capacitor voltage following a sine wave in an RC circuit"></canvas>
+      <div class="strip"><span class="c1">V1 (source)</span><span class="c2">V across C1</span><span id="s3bstrip"></span></div>
+    </div>
+    <div class="panel">
+      <h3>Watch it charge: the pre-lab RC circuit</h3>
+      <p class="small">R1 = 1 kΩ and C1 = 1 µF, so the time constant τ = RC = 1 ms. Compare it with the period T of the sine.</p>
+      <div class="tabs">
+        <button type="button" data-T="0.1">T = 100 ms (T ≫ τ)</button>
+        <button type="button" data-T="0.00628" class="on">T = 6.3 ms (corner)</button>
+        <button type="button" data-T="0.0005">T = 0.5 ms (T ≪ τ)</button>
+      </div>
+      <canvas id="cv3c" style="width:100%;height:56px;display:block" aria-label="Capacitor plates filling with charge"></canvas>
+      <div class="msg" id="s3bmsg"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="lab" id="sweep">
+  <div class="steps-tag">Handout steps 9–21</div>
+  <h2>4 · Sweeping the filter from 3 kHz down to 1 Hz</h2>
+  <p>This is the circuit you build on the plugboard. CH1 (yellow) watches <span class="mono">top</span>, which is the generator and stays constant. CH2 (green) watches <span class="mono">mid</span>, the voltage across R2. Pick each frequency from the handout, then try <b>Autoscale</b>. Below about 20&nbsp;Hz it stops helping and you set the knobs yourself, exactly like in the lab.</p>
+  <div class="two">
+    <div class="stack">
+      <div class="bezel">
+        <canvas class="scope" id="cv4" aria-label="Two-channel scope showing Vtop and Vmid of the RC filter"></canvas>
+        <div class="strip"><span class="c1" id="s4c1"></span><span class="c2" id="s4c2"></span><span id="s4tb"></span><span id="s4acq"></span></div>
+        <div class="strip" id="s4meas"></div>
+      </div>
+      <div class="ctrls">
+        <button type="button" class="key auto" id="s4auto">Autoscale</button>
+        <label for="s4t">Time/div<select id="s4t"></select></label>
+        <label for="s4v1">CH1 V/div<select id="s4v1"></select></label>
+        <label for="s4v2">CH2 V/div<select id="s4v2"></select></label>
+      </div>
+    </div>
+    <div class="panel">
+      <svg viewBox="0 0 330 250" class="schem" id="schem" role="img" aria-label="Lab circuit: generator to node top, R1 150k parallel with C1 100nF to node mid, R2 4.75k to ground. Animated dots show current in each branch.">
+        <circle cx="45" cy="130" r="22" class="wire"/><path d="M33 130 q6 -12 12 0 t12 0" class="wire"/>
+        <path id="pMain" class="wire" d="M45 108 V40 H175"/>
+        <path id="pR1" class="wire" d="M175 40 H140 V65 l-8 4 16 6 -16 6 16 6 -16 6 16 6 -8 4 V135 H175"/>
+        <path id="pC" class="wire" d="M175 40 H215 V83 M215 97 V135 H175"/>
+        <path id="pCf" d="M175 40 H215 V135 H175" fill="none" stroke="none"/>
+        <path class="wire" d="M198 83 H232 M198 97 H232"/>
+        <path id="pR2" class="wire" d="M175 135 V150 l-8 4 16 6 -16 6 16 6 -16 6 16 6 -8 4 V222 H45 V152"/>
+        <path class="wire" d="M100 222 v6 M90 228 h20 M94 232 h12 M98 236 h4"/>
+        <circle cx="175" cy="40" r="3.5" fill="var(--ink)"/><circle cx="175" cy="135" r="3.5" fill="var(--ink)"/>
+        <text x="180" y="30" class="lbl">top</text><text x="183" y="132" class="lbl">mid</text>
+        <text x="90" y="88" class="lbl">R1</text><text x="84" y="101" class="sub">150 kΩ</text>
+        <text x="240" y="88" class="lbl">C1</text><text x="240" y="101" class="sub">100 nF</text>
+        <text x="193" y="180" class="lbl">R2</text><text x="193" y="193" class="sub">4.75 kΩ</text>
+        <text x="4" y="168" class="sub">generator</text>
+        <text x="235" y="30" class="p1">CH1 ▸ top</text><text x="235" y="140" class="p2">CH2 ▸ mid</text>
+        <g id="dots"></g>
+        <text x="20" y="246" class="sub" id="iR1"></text><text x="175" y="246" class="sub" id="iC"></text>
+      </svg>
+      <label class="small mono" for="s4f">Generator frequency: <b id="s4fv"></b></label>
+      <input type="range" id="s4f" min="0" max="3.5" step="0.005" value="2.954">
+      <div class="freqs" id="s4freqs"></div>
+      <dl class="readout" id="s4out"></dl>
+    </div>
+  </div>
+  <div class="msg" id="s4msg"></div>
+
+  <div class="two">
+    <div class="panel">
+      <h3>Question 2 shape: Vmid (rms) vs frequency</h3>
+      <canvas class="plot" id="cv4m" aria-label="Plot of Vmid rms versus frequency on a log axis"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Question 3 shape: phase vs frequency</h3>
+      <canvas class="plot" id="cv4p" aria-label="Plot of phase versus frequency on a log axis"></canvas>
+    </div>
+  </div>
+  <p class="small">Dots mark the handout frequencies; the ring is where you are now. Use a log frequency axis in Google Sheets, otherwise everything below 1 kHz is squashed into the left edge (same lesson as pre-lab step 11).</p>
+
+  <div class="why">
+    <div class="panel"><h3>At 3 kHz: Vmid ≈ Vtop, phase ≈ 0°</h3><p>X<sub>C</sub> is only about 530 Ω, far smaller than R1’s 150 kΩ, so current takes the capacitor like a shortcut. R1 and C1 together act like a wire and <span class="mono">mid</span> is almost the same as <span class="mono">top</span>.</p></div>
+    <div class="panel"><h3>At 1 Hz: Vmid is tiny, about 61 mV rms</h3><p>X<sub>C</sub> ≈ 1.6 MΩ, so the capacitor is nearly an open switch. Only R1 and R2 remain: a plain voltage divider, 2 V × 4.75k / 154.75k ≈ 0.061 V. That is why CH2 needs a much smaller V/div.</p></div>
+    <div class="panel"><h3>In between: the phase bump</h3><p>Current through a capacitor peaks when the voltage is <i>changing</i> fastest, a quarter cycle early. When the capacitor carries part of the current, <span class="mono">mid</span> rises before <span class="mono">top</span> does. The lead is largest around 60 Hz (≈70°) and fades at both ends, where one path (R1 or C1) takes over.</p></div>
+    <div class="panel"><h3>The sign on the phase readout</h3><p>Physically, <span class="mono">mid</span> <b>leads</b> <span class="mono">top</span>. The handout says the scope shows this as a <b>negative</b> number: channel 2 arrives earlier than channel 1. Record the sign exactly as the scope shows it and say so in your plot.</p></div>
+    <div class="panel"><h3>Why Autoscale gives up below ~20 Hz</h3><p>Autoscale hunts for repeating edges to trigger on, and it wants to see several of them quickly. At 3 Hz one cycle takes 0.33 s, so it cannot find a stable picture. Set it yourself: <b>time/div ≈ (cycles you want × period) / 10</b>, and pick V/div so the wave fills about 6 boxes.</p></div>
+    <div class="panel"><h3>Why the scope gets sluggish at 1 Hz</h3><p>To show 3 cycles of a 1 Hz wave the screen spans 3 seconds, so each new picture takes 3 seconds to draw. Watch the trace crawl across the screen above. Wait for at least one full cycle before reading any measurement.</p></div>
+  </div>
+
+  <div class="panel">
+    <h3>Theory check for each handout frequency</h3>
+    <p class="small">Calculated for an ideal circuit with 2.00 V rms at <span class="mono">top</span>. Real parts are ±1% (resistors) and up to ±10% (capacitor), so expect a few percent difference, most of it near the corner.</p>
+    <div class="tblwrap"><table id="s4tbl"></table></div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="lab" id="build">
+  <div class="steps-tag">Handout steps 22–35</div>
+  <h2>5 · Building the circuit board, part by part</h2>
+  <p>You tear down the plugboard and solder the same parts, plus power-supply parts, onto your PCB. Pick a part to see how to recognise it, where it goes, which way round, and what it is for.</p>
+  <div class="parts" id="parts"></div>
+  <div class="panel detail" id="partDetail"></div>
+  <div class="two">
+    <div class="bezel">
+      <canvas class="wide" id="cv5" aria-label="Animation of supply voltage dipping during current pulses, with and without bypass capacitors"></canvas>
+      <div class="strip"><span class="c1">load current pulses</span><span class="c2">supply voltage at the chip</span></div>
+    </div>
+    <div class="panel">
+      <h3>Why bypass capacitors (steps 27–31)</h3>
+      <p class="small">The microcontroller and LEDs draw current in short bursts. The power adapter is slow to react, so without help the voltage at the chip dips on every burst. Capacitors next to the chip are small local energy tanks that cover each burst until the supply catches up.</p>
+      <div class="tabs">
+        <button type="button" data-byp="0">No bypass caps</button>
+        <button type="button" data-byp="1" class="on">With C1, C2, C6 + L1</button>
+      </div>
+      <p class="small">Illustration only, not to scale. 100 nF covers the fastest spikes, 10 µF and 470 µF cover longer dips, and the ferrite bead L1 blocks high-frequency noise from the digital side reaching the analog supply.</p>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Decode a capacitor marking</h3>
+    <p class="small">Three digits: first two are the value, third is how many zeros to add, in picofarads. So 104 = 10 + 0000 pF = 100 000 pF = 100 nF.</p>
+    <div class="ctrls"><label for="code">Code on the part<input type="number" id="code" value="104" min="100" max="999"></label><span class="mono" id="codeOut"></span></div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="lab" id="dc">
+  <div class="steps-tag">Handout steps 36–44 · Question 4</div>
+  <h2>6 · Powering up and measuring DC with the DMM</h2>
+  <div class="two">
+    <div class="panel">
+      <h3>Procedure</h3>
+      <ol class="flow">
+        <li>Fixture in front of you, text right side up. Board with <span class="mono">ATmega4809</span> text right side up.</li>
+        <li>Two steel pins go through the board holes; slide it down level until J2 (3 pins) mates. If it resists, stop and ask a TA.</li>
+        <li>Plug the adapter into the fixture barrel jack, then into the bench strip. Press the right side of the switch; the fixture LED lights.</li>
+        <li>DMM on DC volts. Black lead on ground (screw hole or wire loop), red on <span class="mono">AVDD</span>. Expect <b>5 V ± 0.25 V</b>.</li>
+        <li>Red lead on <span class="mono">TP2</span>. Record it.</li>
+        <li>Switch off, remove the board, unplug the adapter.</li>
+      </ol>
+      <p class="small">Why the DMM here and not the scope: these are steady DC values and the DMM is far more accurate than the scope’s ±2%.</p>
+    </div>
+    <div class="panel">
+      <h3>The voltage divider R6 / R7</h3>
+      <svg viewBox="0 0 260 150" class="schem" role="img" aria-label="Voltage divider from AVDD through top resistor to TP2 then bottom resistor to ground, with C9 from TP2 to ground">
+        <path class="wire" d="M60 10 V25 l-7 3 14 5 -14 5 14 5 -14 5 14 5 -7 3 V75 l-7 3 14 5 -14 5 14 5 -14 5 14 5 -7 3 V140"/>
+        <path class="wire" d="M60 75 H140 V95 M126 95 H154 M126 103 H154 M140 103 V140 H60"/>
+        <circle cx="60" cy="75" r="3" fill="var(--ink)"/>
+        <text x="72" y="14" class="lbl">AVDD</text>
+        <text x="74" y="45" class="lbl" id="dvTop">R6 59 kΩ</text>
+        <text x="74" y="115" class="lbl" id="dvBot">R7 150 kΩ</text>
+        <text x="148" y="72" class="lbl">TP2 → microcontroller</text>
+        <text x="160" y="103" class="sub">C9 1 nF</text>
+        <text x="64" y="148" class="sub">GND</text>
+      </svg>
+      <div class="ctrls">
+        <label for="avdd">AVDD measured (V)<input type="number" id="avdd" step="0.01" value="5.00"></label>
+        <label for="tp2">TP2 measured (V)<input type="number" id="tp2" step="0.01" value="3.57"></label>
+        <label for="topo">Resistor on the AVDD side<select id="topo"><option value="r6">R6 59 kΩ</option><option value="r7">R7 150 kΩ</option></select></label>
+      </div>
+      <dl class="readout" id="dvOut"></dl>
+      <p class="small">Check your board’s schematic for which resistor connects to AVDD before you hand in Question 4. The formula is the same either way: V<sub>TP2</sub> = AVDD × R<sub>bottom</sub> / (R<sub>top</sub> + R<sub>bottom</sub>). The 4.3 V limit is the microcontroller’s internal reference; TP2 must stay below it.</p>
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+(()=>{
+const TAU=Math.PI*2;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $=s=>document.querySelector(s);
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const ease=x=>{x=clamp(x);return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2};
+const lerp=(a,b,k)=>a+(b-a)*k;
+
+let P={};
+function refresh(){const cs=getComputedStyle(document.documentElement);
+  ['--scr','--grid','--grid2','--c1s','--c2s','--curs','--hl','--part','--ink','--muted','--line','--accent','--warn','--ch1','--ch2','--panel','--bg','--f-mono'].forEach(k=>P[k.slice(2)]=cs.getPropertyValue(k).trim());}
+refresh();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',refresh);
+new MutationObserver(refresh).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+function fmt(v,u,d=3){if(!isFinite(v))return '—';if(v===0)return '0 '+u;const a=Math.abs(v);
+  const pre=[[1e6,'M'],[1e3,'k'],[1,''],[1e-3,'m'],[1e-6,'µ'],[1e-9,'n'],[1e-12,'p']];
+  for(const [m,p] of pre){if(a>=m*0.9995){return Number((v/m).toPrecision(d))+' '+p+u}}
+  return Number((v/1e-12).toPrecision(d))+' p'+u;}
+const steps125=(lo,hi)=>{const r=[];for(let e=-7;e<=1;e++)for(const m of [1,2,5]){const v=m*Math.pow(10,e);if(v>=lo*0.999&&v<=hi*1.001)r.push(+v.toPrecision(3))}return r};
+const TDIV=steps125(1e-5,1), VDIV=steps125(2e-3,5);
+function fillSelect(sel,list,unit,val){sel.innerHTML=list.map(v=>`<option value="${v}">${fmt(v,unit)}/div</option>`).join('');sel.value=String(val)}
+
+function fit(cv){const dpr=window.devicePixelRatio||1;const w=cv.clientWidth,h=cv.clientHeight;
+  const W=Math.round(w*dpr),H=Math.round(h*dpr);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};}
+
+// Generic scope: 10 x 8 divisions, screen time from -pos*tdiv to (10-pos)*tdiv, trigger at t=0
+function drawScope(cv,o){
+  const {ctx,w,h}=fit(cv); if(!w)return;
+  const tdiv=o.tdiv,pos=o.pos??5,tL=-pos*tdiv,span=10*tdiv,dx=w/10,dy=h/8;
+  const X=t=>(t-tL)/span*w, T=x=>tL+x/w*span;
+  ctx.fillStyle=P.scr;ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle=P.grid;ctx.lineWidth=1;ctx.setLineDash([1,3]);ctx.beginPath();
+  for(let i=1;i<10;i++){ctx.moveTo(i*dx+.5,0);ctx.lineTo(i*dx+.5,h)}
+  for(let j=1;j<8;j++){ctx.moveTo(0,j*dy+.5);ctx.lineTo(w,j*dy+.5)}
+  ctx.stroke();ctx.setLineDash([]);
+  ctx.strokeStyle=P.grid2;ctx.beginPath();ctx.moveTo(0,h/2+.5);ctx.lineTo(w,h/2+.5);ctx.moveTo(w/2+.5,0);ctx.lineTo(w/2+.5,h);
+  for(let i=0;i<50;i++){const x=i*dx/5+.5;ctx.moveTo(x,h/2-3);ctx.lineTo(x,h/2+3)}
+  for(let j=0;j<40;j++){const y=j*dy/5+.5;ctx.moveTo(w/2-3,y);ctx.lineTo(w/2+3,y)}
+  ctx.stroke();
+  // trigger position marker
+  ctx.fillStyle=P.accent;ctx.beginPath();const tx=X(0);ctx.moveTo(tx-5,0);ctx.lineTo(tx+5,0);ctx.lineTo(tx,7);ctx.fill();
+  ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
+  const g={ctx,w,h,dx,dy,X,T,tdiv,Y:(v,vdiv,off=0)=>h/2-(v/vdiv)*dy-off*dy};
+  o.under&&o.under(g);
+  const prog=o.progress??1;
+  for(const tr of o.traces){
+    ctx.strokeStyle=tr.color;ctx.lineWidth=tr.width||2;ctx.globalAlpha=tr.alpha??1;
+    ctx.shadowColor=tr.color;ctx.shadowBlur=reduce?0:6;ctx.beginPath();
+    const N=Math.ceil(w*1.5),end=Math.floor(N*prog);
+    for(let i=0;i<=end;i++){const x=i/N*w;const y=g.Y(tr.fn(T(x)),tr.vdiv,tr.off||0);
+      const yc=Math.max(-20,Math.min(h+20,y));i?ctx.lineTo(x,yc):ctx.moveTo(x,yc)}
+    ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1;
+    if(prog<1&&!reduce){const x=end/N*w;ctx.fillStyle=tr.color;ctx.beginPath();ctx.arc(x,g.Y(tr.fn(T(x)),tr.vdiv,tr.off||0),3,0,TAU);ctx.fill()}
+  }
+  o.over&&o.over(g);
+  ctx.restore();
+}
+function hline(g,y,dash,color,label,right){const c=g.ctx;c.strokeStyle=color;c.lineWidth=1.3;c.setLineDash(dash);c.beginPath();c.moveTo(0,y);c.lineTo(g.w,y);c.stroke();c.setLineDash([]);
+  if(label){c.font=`11px ${P['f-mono']}`;c.fillStyle=color;c.textAlign=right?'right':'left';c.fillText(label,right?g.w-6:6,y-5)}}
+function vline(g,x,dash,color,label){const c=g.ctx;c.strokeStyle=color;c.lineWidth=1.3;c.setLineDash(dash);c.beginPath();c.moveTo(x,0);c.lineTo(x,g.h);c.stroke();c.setLineDash([]);
+  if(label){c.font=`11px ${P['f-mono']}`;c.fillStyle=color;c.textAlign='left';c.fillText(label,x+4,g.h-8)}}
+function tag(g,x,y,text,color){const c=g.ctx;c.font=`600 12px ${P['f-mono']}`;const m=c.measureText(text).width;
+  x=Math.max(4,Math.min(g.w-m-12,x));c.fillStyle='rgba(10,16,23,.85)';c.fillRect(x,y-14,m+8,19);c.fillStyle=color;c.textAlign='left';c.fillText(text,x+4,y)}
+
+// visibility-driven animation loop
+const vis=new Map();const io=new IntersectionObserver(es=>es.forEach(e=>vis.set(e.target,e.isIntersecting)),{rootMargin:'100px'});
+const anims=[];function anim(el,fn){io.observe(el);anims.push([el,fn]);vis.set(el,true)}
+let t0=performance.now();
+function loop(now){const t=(now-t0)/1000;for(const [el,fn] of anims){if(vis.get(el))fn(t)}requestAnimationFrame(loop)}
+
+/* ---------- 1. Reading the screen ---------- */
+const A=2*Math.SQRT2, F0=900, T0=1/F0;
+const s1={vdiv:1,tdiv:2e-4,start:0};
+const s1v=$('#s1v'),s1t=$('#s1t');
+fillSelect(s1v,[0.2,0.5,1,2,5],'V',1);fillSelect(s1t,[5e-5,1e-4,2e-4,5e-4,1e-3],'s',2e-4);
+function s1text(){
+  const bv=2*A/s1.vdiv, bh=T0/s1.tdiv;const rv=Math.round(bv*5)/5, rh=Math.round(bh*5)/5;
+  $('#s1ch').textContent=`CH1 ${fmt(s1.vdiv,'V')}/div`;$('#s1tb').textContent=`${fmt(s1.tdiv,'s')}/div`;
+  $('#s1out').innerHTML=`<dt>Vpp</dt><dd>${rv.toFixed(1)} boxes × ${fmt(s1.vdiv,'V')} = <span class="hot">${fmt(rv*s1.vdiv,'V')}</span></dd>
+  <dt>Period</dt><dd>${rh.toFixed(1)} boxes × ${fmt(s1.tdiv,'s')} = <span class="hot">${fmt(rh*s1.tdiv,'s')}</span></dd>
+  <dt>Frequency</dt><dd>1 / period = <span class="hot">${fmt(1/(rh*s1.tdiv),'Hz')}</span></dd>`;
+  const m=$('#s1msg');m.className='msg';
+  if(bv>8){m.className='msg warn';m.textContent='The wave is taller than the screen (clipped), so you cannot see the peaks. Turn volts/div up.'}
+  else if(bv<2){m.className='msg warn';m.textContent='The wave is only a couple of boxes tall, so a ±0.2 box reading error is a big percentage. Turn volts/div down.'}
+  else if(bh>8){m.className='msg warn';m.textContent='One period does not fit on the screen. Turn time/div up.'}
+  else if(bh<1.5){m.className='msg warn';m.textContent='The waves are squashed together; one period is less than 2 boxes wide. Turn time/div down.'}
+  else m.textContent='Good view: the wave fills most of the height and one period spans several boxes. Precise readings need big pictures.';
+}
+function boxOverlay(g,k,vdiv,tdiv){
+  const yv=g.Y(-A,vdiv),yp=g.Y(A,vdiv);const kv=ease(k/2.5),kh=ease((k-3)/2.5);
+  if(k>0){const top=lerp(yv,yp,kv);g.ctx.fillStyle=P.hl;g.ctx.fillRect(g.w*0.86,top,g.w*0.1,yv-top);
+    hline(g,yv,[2,2],P.curs);if(kv>0.02)hline(g,top,[2,2],P.curs);
+    tag(g,g.w*0.62,top-4,`${((yv-top)/g.dy).toFixed(1)} boxes`,P.c1s)}
+  if(k>3){const x0=g.X(0),x1=lerp(x0,g.X(T0),kh);g.ctx.fillStyle=P.hl;g.ctx.fillRect(x0,g.h*0.88,x1-x0,g.h*0.08);
+    vline(g,x0,[2,2],P.curs);if(kh>0.02)vline(g,x1,[2,2],P.curs);
+    tag(g,x0+6,g.h*0.84,`${((x1-x0)/g.dx).toFixed(1)} boxes`,P.c1s)}
+}
+anim($('#cv1'),t=>{const k=reduce?9:(t-s1.start)%9;
+  drawScope($('#cv1'),{tdiv:s1.tdiv,pos:2,traces:[{fn:x=>A*Math.sin(TAU*F0*x),vdiv:s1.vdiv,color:P.c1s}],over:g=>boxOverlay(g,Math.min(k,6),s1.vdiv,s1.tdiv)})});
+s1v.onchange=()=>{s1.vdiv=+s1v.value;s1.start=(performance.now()-t0)/1000;s1text()};
+s1t.onchange=()=>{s1.tdiv=+s1t.value;s1.start=(performance.now()-t0)/1000;s1text()};
+$('#s1count').onclick=()=>{s1.start=(performance.now()-t0)/1000};
+s1text();
+
+/* ---------- 2. Three methods ---------- */
+const s2={mode:'boxes',start:0};
+const RMS=A/Math.SQRT2;
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));s2.mode=b.dataset.m;s2.start=(performance.now()-t0)/1000;s2static()});
+function s2static(){
+  const names={boxes:'Counting boxes',cursors:'Cursors · Manual · Source CH1',auto:'Meas · Source CH1'};$('#s2mode').textContent=names[s2.mode];
+  const notes={boxes:'Fast to learn, no buttons, but limited by your eye. Always write down the V/div and time/div you used.',
+    cursors:'Y cursors are horizontal lines (they mark a voltage); X cursors are vertical lines (they mark a time). The scope does the scale math for you, so the answer is as good as where you park the line.',
+    auto:'Press Meas → Clear Meas → Clear All first, so you do not inherit the last group’s measurements. Check that the cursors the scope draws make sense; with odd waveforms it can be fooled.'};
+  $('#s2note').textContent=notes[s2.mode];
+}
+const CUR=[['Cursors key → Mode: Manual → Source: CH1 → select Y1. Turn the Cursors knob: Y1 (fine dashes) goes down to the valley.',0.3],
+  ['Select Y2 (wide dashes) and move it up to the peak. ΔY is the peak-to-peak voltage.',2.3],
+  ['Select X1 and park it where the wave rises through 0 V.',4.3],
+  ['Select X2 and move it one period right, to the next rising zero crossing. Read ΔX (period) and 1/ΔX (frequency).',6.3],
+  ['Done. Record ΔY, ΔX and 1/ΔX.',8.3]];
+const AUTO=[['Peak-Peak: the scope finds the highest and lowest samples and subtracts.','pp'],['Period: time between two matching rising edges.','per'],['Frequency: 1 / period, from the same edges.','freq'],['AC RMS – N Cycles: RMS over whole cycles only (shaded). Expect about 2 V, twice the generator setting.','rms']];
+anim($('#cv2'),t=>{
+  const k=reduce?100:(t-s2.start);const sig={fn:x=>A*Math.sin(TAU*F0*x),vdiv:1,color:P.c1s};
+  let over,step,out;
+  if(s2.mode==='boxes'){const kk=reduce?6:k%9;over=g=>boxOverlay(g,Math.min(kk,6),1,2e-4);
+    step='Count boxes from the valley to the peak, then from one rising zero crossing to the next. Multiply by the knob settings.';
+    out=`<dt>Vpp</dt><dd>5.6 boxes × 1 V = 5.6 V</dd><dt>Period</dt><dd>5.6 boxes × 200 µs = 1.12 ms</dd><dt>Frequency</dt><dd>1 / 1.12 ms ≈ 893 Hz</dd>`}
+  else if(s2.mode==='cursors'){const kk=reduce?10:k%11;
+    const y1=lerp(0,-A,ease((kk-0.3)/1.5)),y2=lerp(0,A,ease((kk-2.3)/1.5)),x1=lerp(-3e-4,0,ease((kk-4.3)/1.5)),x2=lerp(5e-4,T0,ease((kk-6.3)/1.5));
+    const shX=kk>4.3,shY2=kk>2.3;
+    over=g=>{hline(g,g.Y(y1,1),[2,3],P.curs,'Y1',true);if(shY2)hline(g,g.Y(y2,1),[8,5],P.curs,'Y2',true);
+      if(shX){vline(g,g.X(x1),[2,3],P.curs,'X1');if(kk>6.3)vline(g,g.X(x2),[8,5],P.curs,'X2')}};
+    let i=CUR.length-1;while(i>0&&kk<CUR[i][1])i--;step=CUR[i][0];
+    const dy=(shY2?y2:0)-y1,dX=x2-x1;
+    out=`<dt>Y1</dt><dd>${fmt(y1,'V')}</dd><dt>Y2</dt><dd>${shY2?fmt(y2,'V'):'—'}</dd><dt>ΔY</dt><dd class="hot">${shY2?fmt(dy,'V'):'—'}</dd>
+      <dt>X1</dt><dd>${shX?fmt(x1,'s'):'—'}</dd><dt>X2</dt><dd>${kk>6.3?fmt(x2,'s'):'—'}</dd><dt>ΔX</dt><dd class="hot">${kk>6.3?fmt(dX,'s',4):'—'}</dd><dt>1/ΔX</dt><dd class="hot">${kk>6.3?fmt(1/dX,'Hz',4):'—'}</dd>`}
+  else{const i=reduce?0:Math.floor(k/2.5)%4;const id=AUTO[i][1];step=AUTO[i][0];
+    over=g=>{if(id==='pp'){hline(g,g.Y(A,1),[4,3],P.curs,'max',true);hline(g,g.Y(-A,1),[4,3],P.curs,'min',true)}
+      else if(id==='per'||id==='freq'){vline(g,g.X(0),[4,3],P.curs);vline(g,g.X(T0),[4,3],P.curs);const y=g.h*0.12;g.ctx.strokeStyle=P.curs;g.ctx.beginPath();g.ctx.moveTo(g.X(0),y);g.ctx.lineTo(g.X(T0),y);g.ctx.stroke();tag(g,g.X(T0/2)-30,y-4,id==='per'?'1.111 ms':'900 Hz',P.c1s)}
+      else{g.ctx.fillStyle=P.hl;g.ctx.fillRect(g.X(0),0,g.X(T0)-g.X(0),g.h);hline(g,g.Y(RMS,1),[4,3],P.curs,'+rms',true);hline(g,g.Y(-RMS,1),[4,3],P.curs,'−rms',true)}};
+    const row=(n,v,j)=>`<dt>${n}</dt><dd${j===i?' class="hot"':''}>${v}</dd>`;
+    out=row('Pk-Pk(1)','5.66 V',0)+row('Period(1)','1.111 ms',1)+row('Freq(1)','900.0 Hz',2)+row('AC RMS-Cyc(1)','2.00 V',3)}
+  drawScope($('#cv2'),{tdiv:2e-4,pos:2,traces:[sig],over});
+  if($('#s2step').textContent!==step)$('#s2step').textContent=step;
+  if($('#s2out').dataset.v!==out){$('#s2out').innerHTML=out;$('#s2out').dataset.v=out}
+});
+s2static();
+
+// Avg-FS vs Avg-Cyc
+const s2b={p:2.5};
+function s2bText(){const p=s2b.p,n=Math.floor(p);const fs=A*(1-Math.cos(TAU*p))/(TAU*p);
+  $('#s2bpv').textContent=p.toFixed(2);
+  $('#s2bstrip').textContent=`${fmt(p*T0/10,'s')}/div · ${p.toFixed(2)} cycles`;
+  $('#s2bout').innerHTML=`<dt>Avg – FS</dt><dd class="hot">${fmt(fs,'V')}</dd><dt>Avg – Cyc</dt><dd>0 V (${n} whole cycle${n>1?'s':''})</dd>
+  <dt>True average</dt><dd>0 V</dd>`}
+$('#s2bp').oninput=e=>{s2b.p=+e.target.value;s2bText()};s2bText();
+anim($('#cv2b'),()=>{const p=s2b.p,td=p*T0/10;
+  drawScope($('#cv2b'),{tdiv:td,pos:0,traces:[{fn:x=>A*Math.sin(TAU*F0*x),vdiv:1,color:P.c1s}],
+    under:g=>{const n=Math.floor(p);g.ctx.fillStyle=P.part;g.ctx.fillRect(g.X(n*T0),0,g.w-g.X(n*T0),g.h);
+      for(let i=1;i<=n;i++)vline(g,g.X(i*T0),[3,3],P.grid2)},
+    over:g=>{const fs=A*(1-Math.cos(TAU*p))/(TAU*p);hline(g,g.Y(fs,1),[6,4],'#ff9a50','Avg-FS',true)}})});
+
+/* ---------- 3. Capacitor ---------- */
+const s3={C:1e-7,f:10};
+function s3text(){const xc=1/(TAU*s3.f*s3.C);$('#s3fv').textContent=fmt(s3.f,'Hz');
+  $('#s3out').innerHTML=`<dt>f</dt><dd>${fmt(s3.f,'Hz')}</dd><dt>C</dt><dd>${fmt(s3.C,'F')}</dd><dt>X<sub>C</sub></dt><dd class="hot">${fmt(xc,'Ω')}</dd><dt>vs R1</dt><dd>${xc>150e3?(xc/150e3).toPrecision(2)+'× harder path than R1':(150e3/xc).toPrecision(2)+'× easier path than R1'}</dd>`;
+  const m=$('#s3msg');
+  m.textContent=xc>1.5e6?'Behaves almost like an open circuit at this frequency: very little current gets through.':xc<15e3?'Behaves almost like a wire at this frequency compared with 150 kΩ.':'In the middle region: the capacitor and R1 share the current. This is where the interesting phase shifts happen.'}
+$('#s3f').oninput=e=>{s3.f=Math.pow(10,+e.target.value);s3text();drawS3()};
+$('#s3c').onchange=e=>{s3.C=+e.target.value;s3text();drawS3()};
+function logAxes(ctx,w,h,pad,fx,fy,xt,yt,xl,yl){
+  ctx.fillStyle=P.panel;ctx.fillRect(0,0,w,h);ctx.strokeStyle=P.line;ctx.lineWidth=1;ctx.font=`10px ${P['f-mono']}`;ctx.fillStyle=P.muted;
+  ctx.textAlign='center';for(const [v,l] of xt){const x=fx(v);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,h-pad.b);ctx.stroke();ctx.fillText(l,x,h-pad.b+14)}
+  ctx.textAlign='right';for(const [v,l] of yt){const y=fy(v);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();ctx.fillText(l,pad.l-5,y+3)}
+  ctx.textAlign='center';ctx.fillText(xl,(pad.l+w-pad.r)/2,h-3);
+  ctx.save();ctx.translate(11,(pad.t+h-pad.b)/2);ctx.rotate(-Math.PI/2);ctx.fillText(yl,0,0);ctx.restore();}
+function drawS3(){const cv=$('#cv3');const {ctx,w,h}=fit(cv);if(!w)return;const pad={l:52,r:12,t:10,b:30};
+  const fx=f=>pad.l+(Math.log10(f)-0)/6*(w-pad.l-pad.r),fy=z=>pad.t+(8-Math.log10(z))/8*(h-pad.t-pad.b);
+  logAxes(ctx,w,h,pad,fx,fy,[[1,'1'],[10,'10'],[100,'100'],[1e3,'1k'],[1e4,'10k'],[1e5,'100k'],[1e6,'1M']],[[1,'1Ω'],[100,'100Ω'],[1e4,'10k'],[1e6,'1M'],[1e8,'100M']],'frequency (Hz)','X_C');
+  ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);ctx.clip();
+  ctx.strokeStyle=P.warn;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(pad.l,fy(150e3));ctx.lineTo(w-pad.r,fy(150e3));ctx.stroke();ctx.setLineDash([]);
+  ctx.strokeStyle=P.accent;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(fx(1),fy(1/(TAU*1*s3.C)));ctx.lineTo(fx(1e6),fy(1/(TAU*1e6*s3.C)));ctx.stroke();
+  const xc=1/(TAU*s3.f*s3.C);ctx.fillStyle=P.accent;ctx.beginPath();ctx.arc(fx(s3.f),fy(xc),6,0,TAU);ctx.fill();
+  ctx.strokeStyle=P.accent;ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(fx(s3.f),fy(xc));ctx.lineTo(fx(s3.f),h-pad.b);ctx.stroke();ctx.setLineDash([]);
+  ctx.restore();}
+s3text();
+
+const s3b={T:0.00628};
+document.querySelectorAll('[data-T]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-T]').forEach(x=>x.classList.toggle('on',x===b));s3b.T=+b.dataset.T;s3bText()});
+function rcH(T){const wt=TAU/T*1e-3;return {mag:1/Math.hypot(1,wt),ph:Math.atan(wt)}}
+function s3bText(){const {mag,ph}=rcH(s3b.T);$('#s3bstrip').textContent=`T = ${fmt(s3b.T,'s')} · τ = 1 ms`;
+  const m=$('#s3bmsg');const pct=Math.round(mag*100),deg=Math.round(ph*180/Math.PI);
+  m.innerHTML=s3b.T>0.05?`<b>T ≫ τ (slow wave):</b> plenty of time to charge, so V<sub>C</sub> follows V1 almost exactly (${pct}% of V1, only ${deg}° late). Little current, so little voltage is lost across R1.`
+   :s3b.T<0.001?`<b>T ≪ τ (fast wave):</b> the sine reverses before the capacitor gets far, so V<sub>C</sub> stays small (${pct}% of V1) and lags by ${deg}°. Almost all of V1 appears across R1.`
+   :`<b>T ≈ 2πτ (the corner):</b> V<sub>C</sub> is ${pct}% of V1 (the half-power point, 1/√2) and lags by ${deg}°. Taking the output across C makes this a low-pass filter.`}
+anim($('#cv3b'),t=>{const T=s3b.T,{mag,ph}=rcH(T);const sweep=reduce?1:((t%3)/2.4);
+  const tdiv=2*T/10;const vin=x=>Math.sin(TAU*x/T),vc=x=>mag*Math.sin(TAU*x/T-ph);
+  drawScope($('#cv3b'),{tdiv,pos:0,progress:Math.min(1,sweep),traces:[{fn:vin,vdiv:0.3,color:P.c1s},{fn:vc,vdiv:0.3,color:P.c2s}]});
+  // plates
+  const cv=$('#cv3c');const {ctx,w,h}=fit(cv);if(!w)return;ctx.fillStyle=P.panel;ctx.fillRect(0,0,w,h);
+  const ph2=reduce?0.25:(t/2.4*2)%1;const q=mag*Math.sin(TAU*ph2-ph);const cx=w/2;
+  ctx.fillStyle=P.ink;ctx.fillRect(cx-28,8,6,h-16);ctx.fillRect(cx+22,8,6,h-16);
+  const n=Math.round(Math.abs(q)*9);ctx.font=`bold 12px ${P['f-mono']}`;ctx.textAlign='center';
+  for(let i=0;i<n;i++){const y=12+i*((h-24)/8);ctx.fillStyle=P.ch1;ctx.fillText(q>0?'+':'−',cx-40,y+4);ctx.fillStyle=P.accent;ctx.fillText(q>0?'−':'+',cx+40,y+4)}
+  ctx.fillStyle=P.muted;ctx.font=`11px ${P['f-mono']}`;ctx.textAlign='left';ctx.fillText(`stored charge ∝ V_C = ${(q).toFixed(2)} × V1 peak`,8,h-4)});
+s3bText();
+
+/* ---------- 4. Sweep ---------- */
+const R1=150e3,R2=4.75e3,C1=100e-9,VT=2;
+function Hf(f){const w=TAU*f,b=w*R1*C1;const zr=R1/(1+b*b),zi=-R1*b/(1+b*b);const dr=R2+zr,di=zi;
+  return {mag:R2/Math.hypot(dr,di),ph:-Math.atan2(di,dr),zr,zi}}
+const LABF=[3000,1000,900,300,100,30,10,3,1];
+const s4={f:900,tdiv:5e-4,v1:1,v2:1,acq:0,msg:'',lastSweep:0};
+const s4t=$('#s4t'),s4v1=$('#s4v1'),s4v2=$('#s4v2');
+fillSelect(s4t,TDIV,'s',s4.tdiv);fillSelect(s4v1,VDIV,'V',s4.v1);fillSelect(s4v2,VDIV,'V',s4.v2);
+$('#s4freqs').innerHTML=LABF.map(f=>`<button type="button" data-f="${f}">${fmt(f,'Hz')}</button>`).join('');
+function setF(f){s4.f=f;$('#s4f').value=Math.log10(f);s4.acqStart=(performance.now()-t0)/1000;s4.msg=`Frequency changed to ${fmt(f,'Hz')}. Press Autoscale, or set time/div and CH2 V/div yourself.`;s4ui()}
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>setF(+b.dataset.f));
+$('#s4f').oninput=e=>{setF(+Math.pow(10,+e.target.value).toPrecision(3))};
+const pick=(list,need)=>list.find(v=>v>=need)||list[list.length-1];
+$('#s4auto').onclick=()=>{
+  if(s4.f<20){s4.msg=`Autoscale could not lock onto a ${fmt(s4.f,'Hz')} signal: one cycle takes ${fmt(1/s4.f,'s')}, too slow for it to find repeating edges. Set the knobs manually: time/div ≈ 3 × ${fmt(1/s4.f,'s')} / 10 ≈ ${fmt(pick(TDIV,0.3/s4.f),'s')}, and CH2 V/div so the green wave is about 6 boxes tall.`}
+  else{const T=1/s4.f;s4.tdiv=pick(TDIV,2*T/10);const vp=VT*Math.SQRT2*2;s4.v1=pick(VDIV,vp/6.5);s4.v2=pick(VDIV,vp*Hf(s4.f).mag/6.5);
+    s4.msg='Autoscale found the signal and set time/div and both V/div for you.';}
+  s4.acqStart=(performance.now()-t0)/1000;s4ui()};
+s4t.onchange=()=>{s4.tdiv=+s4t.value;s4.acqStart=(performance.now()-t0)/1000;s4ui()};
+s4v1.onchange=()=>{s4.v1=+s4v1.value;s4ui()};s4v2.onchange=()=>{s4.v2=+s4v2.value;s4ui()};
+function s4ui(){
+  s4t.value=String(s4.tdiv);s4v1.value=String(s4.v1);s4v2.value=String(s4.v2);
+  const {mag,ph,zr,zi}=Hf(s4.f);const v2=VT*mag,deg=ph*180/Math.PI;const T=1/s4.f;
+  $('#s4fv').textContent=fmt(s4.f,'Hz');
+  document.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.f-s4.f)<1e-9));
+  $('#s4c1').textContent=`CH1 ${fmt(s4.v1,'V')}/div`;$('#s4c2').textContent=`CH2 ${fmt(s4.v2,'V')}/div`;$('#s4tb').textContent=`${fmt(s4.tdiv,'s')}/div`;
+  const cycles=10*s4.tdiv/T;const pp1=VT*2*Math.SQRT2/s4.v1,pp2=v2*2*Math.SQRT2/s4.v2;
+  const flag=pp=>pp>8?' Clipped':pp<1?' Low Signal':'';
+  const ok=cycles>=1;
+  $('#s4meas').innerHTML=`<span class="c1">AC RMS-Cyc(1): ${ok?fmt(VT,'V'):'No edges'}${ok?flag(pp1):''}</span><span class="c2">AC RMS-Cyc(2): ${ok?fmt(v2,'V'):'No edges'}${ok?flag(pp2):''}</span><span>Phase(1→2): ${ok?(-deg).toFixed(1)+'°':'No edges'}</span>`;
+  const xc=1/(TAU*s4.f*C1);
+  $('#s4out').innerHTML=`<dt>X<sub>C</sub></dt><dd>${fmt(xc,'Ω')} <span class="small">(R1 = 150 kΩ)</span></dd><dt>Vmid rms</dt><dd class="hot">${fmt(v2,'V')}</dd><dt>Vmid / Vtop</dt><dd>${(mag*100).toPrecision(3)}%</dd><dt>mid leads top</dt><dd class="hot">${deg.toFixed(1)}°</dd><dt>screen shows</dt><dd>${cycles<100?cycles.toPrecision(2):'>100'} cycles</dd>`;
+  const m=$('#s4msg');let txt=s4.msg||'',warn=/could not|Clipped|Low/.test(txt);
+  if(!ok){txt+=` The screen shows less than one cycle, so N-Cycle measurements read “No edges”. Turn time/div up.`;warn=true}
+  else if(cycles>30){txt+=' Too many cycles squeezed on screen; turn time/div down to see the shape.';warn=true}
+  else if(pp2<1){txt+=' CH2 is less than one box tall (“Low Signal”). Turn CH2 V/div down.';warn=true}
+  else if(pp2>8){txt+=' CH2 runs off the screen (“Clipped”). Turn CH2 V/div up.';warn=true}
+  m.textContent=txt.trim()||'Pick a frequency to start.';m.className=warn?'msg warn':'msg';
+  // branch currents
+  const I=VT/Math.hypot(R2+zr,zi);const vz=I*Math.hypot(zr,zi);
+  s4.iR=vz/R1;s4.iC=vz/xc;s4.iT=I;s4.phI=Math.atan2(-zi,R2+zr);
+  $('#iR1').textContent=`I(R1) ${fmt(s4.iR,'A')}`;$('#iC').textContent=`I(C1) ${fmt(s4.iC,'A')}`;
+  drawBode();tableHL();
+}
+// current dots
+const NS='http://www.w3.org/2000/svg';const dotsG=$('#dots');
+const paths={main:$('#pMain'),R1:$('#pR1'),C:$('#pCf'),R2:$('#pR2')};const dots=[];
+for(const [k,p] of Object.entries(paths)){const L=p.getTotalLength();const n=Math.max(4,Math.round(L/18));
+  for(let i=0;i<n;i++){const c=document.createElementNS(NS,'circle');c.setAttribute('r','2.6');c.setAttribute('fill','var(--accent)');dotsG.appendChild(c);dots.push({c,p,k,L,s:i*L/n})}}
+const IMAX=VT/R2;
+anim($('#schem'),t=>{const tt=reduce?0:t;
+  for(const d of dots){let amp,phs=0;
+    if(d.k==='R1'){amp=s4.iR;phs=s4.phI-Math.atan(TAU*s4.f*R1*C1)}else if(d.k==='C'){amp=s4.iC;phs=s4.phI-Math.atan(TAU*s4.f*R1*C1)+Math.PI/2}else amp=s4.iT,phs=s4.phI;
+    const disp=(amp/IMAX)*16*Math.sin(TAU*0.5*tt+phs);let s=((d.s+disp)%d.L+d.L)%d.L;
+    const pt=d.p.getPointAtLength(s);
+    const hide=d.k==='C'&&pt.x>210&&pt.y>83&&pt.y<97;
+    d.c.setAttribute('cx',pt.x.toFixed(1));d.c.setAttribute('cy',pt.y.toFixed(1));d.c.setAttribute('opacity',hide?0:0.85)}});
+anim($('#cv4'),t=>{const {mag,ph}=Hf(s4.f);const w=TAU*s4.f;const span=10*s4.tdiv;
+  const dur=Math.max(0.5,span);const el=t-(s4.acqStart||0);const prog=reduce?1:(el%(dur+0.25))/dur;
+  const slow=span>=0.5;$('#s4acq').textContent=slow&&prog<1?'Acquiring…':'';
+  drawScope($('#cv4'),{tdiv:s4.tdiv,pos:5,progress:Math.min(1,prog),traces:[
+    {fn:x=>VT*Math.SQRT2*Math.sin(w*x),vdiv:s4.v1,color:P.c1s},
+    {fn:x=>VT*Math.SQRT2*mag*Math.sin(w*x+ph),vdiv:s4.v2,color:P.c2s}]})});
+function drawBodeOne(cv,yfn,ymax,yt,yl,unitFmt){const {ctx,w,h}=fit(cv);if(!w)return;const pad={l:48,r:12,t:10,b:30};
+  const fx=f=>pad.l+Math.log10(f)/4*(w-pad.l-pad.r),fy=v=>pad.t+(1-v/ymax)*(h-pad.t-pad.b);
+  logAxes(ctx,w,h,pad,fx,fy,[[1,'1'],[10,'10'],[100,'100'],[1e3,'1k'],[1e4,'10k']],yt,'frequency (Hz)',yl);
+  ctx.strokeStyle=P.ch2;ctx.lineWidth=2.5;ctx.beginPath();for(let i=0;i<=200;i++){const f=Math.pow(10,i/50);const y=fy(yfn(f));i?ctx.lineTo(fx(f),y):ctx.moveTo(fx(f),y)}ctx.stroke();
+  ctx.fillStyle=P.ch2;for(const f of LABF){ctx.beginPath();ctx.arc(fx(f),fy(yfn(f)),3.5,0,TAU);ctx.fill()}
+  const x=fx(s4.f),y=fy(yfn(s4.f));ctx.strokeStyle=P.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,7,0,TAU);ctx.stroke();
+  ctx.font=`600 11px ${P['f-mono']}`;ctx.fillStyle=P.accent;ctx.textAlign=x>w*0.7?'right':'left';ctx.fillText(unitFmt(yfn(s4.f)),x+(x>w*0.7?-10:10),Math.max(22,y-8))}
+function drawBode(){drawBodeOne($('#cv4m'),f=>VT*Hf(f).mag,2.1,[[0,'0'],[0.5,'0.5'],[1,'1.0'],[1.5,'1.5'],[2,'2.0 V']],'Vmid rms',v=>fmt(v,'V'));
+  drawBodeOne($('#cv4p'),f=>Hf(f).ph*180/Math.PI,90,[[0,'0°'],[30,'30°'],[60,'60°'],[90,'90°']],'mid leads top',v=>v.toFixed(1)+'°')}
+$('#s4tbl').innerHTML=`<thead><tr><th>Frequency</th><th>X<sub>C</sub></th><th>Vmid rms</th><th>Vmid/Vtop</th><th>Phase (mid leads)</th><th>Scope readout</th><th>Suggested time/div</th></tr></thead><tbody>`+
+  [...LABF].sort((a,b)=>b-a).map(f=>{const {mag,ph}=Hf(f);const d=ph*180/Math.PI;return `<tr data-row="${f}"><td class="num">${fmt(f,'Hz')}</td><td class="num">${fmt(1/(TAU*f*C1),'Ω')}</td><td class="num">${fmt(VT*mag,'V')}</td><td class="num">${(mag*100).toPrecision(3)}%</td><td class="num">${d.toFixed(1)}°</td><td class="num">≈ ${(-d).toFixed(1)}°</td><td class="num">${fmt(pick(TDIV,0.3/f),'s')}</td></tr>`}).join('')+'</tbody>';
+function tableHL(){document.querySelectorAll('#s4tbl tr[data-row]').forEach(r=>r.classList.toggle('cur',Math.abs(+r.dataset.row-s4.f)<1e-9))}
+s4.msg='Starting at 900 Hz, as in step 10. Try each handout frequency from 3 kHz down to 1 Hz.';
+s4ui();
+
+/* ---------- 5. Parts ---------- */
+const BAND=['#111','#7a4a1e','#d32f2f','#f57c00','#fdd835','#2e7d32','#1e63d6','#7b3fb5','#8a8a8a','#f4f4f4'];
+const resSVG=b=>`<svg viewBox="0 0 160 40"><line x1="0" y1="20" x2="160" y2="20" stroke="#9aa3ad" stroke-width="3"/><rect x="38" y="8" width="84" height="24" rx="10" fill="#9cc3e6"/>${b.map((c,i)=>`<rect x="${50+i*13}" y="8" width="7" height="24" fill="${BAND[c]}"/>`).join('')}</svg>`;
+const blobSVG=(code,col)=>`<svg viewBox="0 0 160 40"><line x1="70" y1="20" x2="70" y2="40" stroke="#9aa3ad" stroke-width="3"/><line x1="90" y1="20" x2="90" y2="40" stroke="#9aa3ad" stroke-width="3"/><ellipse cx="80" cy="16" rx="22" ry="14" fill="${col}"/><text x="80" y="20" text-anchor="middle" font-size="11" fill="#222">${code}</text></svg>`;
+const canSVG=`<svg viewBox="0 0 160 40"><line x1="70" y1="30" x2="70" y2="40" stroke="#9aa3ad" stroke-width="3"/><line x1="90" y1="30" x2="90" y2="36" stroke="#9aa3ad" stroke-width="3"/><rect x="60" y="2" width="40" height="28" rx="4" fill="#b8c0c8"/><rect x="60" y="2" width="10" height="28" fill="#3b6fd1"/><text x="56" y="38" font-size="11" fill="currentColor" text-anchor="end">+ long</text></svg>`;
+const beadSVG=`<svg viewBox="0 0 160 40"><line x1="0" y1="20" x2="160" y2="20" stroke="#9aa3ad" stroke-width="3"/><rect x="58" y="9" width="44" height="22" rx="6" fill="#444b55"/></svg>`;
+const PARTS=[
+ {id:'C7',grp:'Op-amp filter',step:'23',name:'100 nF ceramic',svg:blobSVG('104','#f2d34a'),how:'Yellow blob marked 104.',where:'C7, on the top side inside the white outline.',dir:'Either way round.',why:'The same 100 nF you measured on the plugboard. With R12 and R13 it becomes a low-pass filter for the op-amp, cut-off around 10 Hz.'},
+ {id:'R12',grp:'Op-amp filter',step:'24',name:'150 kΩ 1%',svg:resSVG([1,5,0,3,1]),how:'Bands brown, green, black, orange, brown. 1% resistors have 5 bands: three digits, multiplier, tolerance.',where:'R12.',dir:'Either way round.',why:'R1 from your plugboard circuit.'},
+ {id:'R13',grp:'Op-amp filter',step:'25',name:'4.75 kΩ 1%',svg:resSVG([4,7,5,1,1]),how:'Bands yellow, violet, green, brown, brown.',where:'R13.',dir:'Either way round.',why:'R2 from your plugboard circuit. Trim kinked leads before inserting.'},
+ {id:'C6',grp:'Power supply filter',step:'27',name:'100 nF ceramic',svg:blobSVG('104','#f2d34a'),how:'Yellow blob marked 104.',where:'C6.',dir:'Either way round.',why:'Bypass capacitor for the fastest current spikes.'},
+ {id:'C1',grp:'Power supply filter',step:'28',name:'10 µF ceramic',svg:blobSVG('106','#6fa8e8'),how:'Blue blob marked 106 (10 + 000000 pF = 10 µF).',where:'C1 on the board (not the plugboard C1).',dir:'Either way round.',why:'Mid-size energy store for slightly longer dips.'},
+ {id:'C2',grp:'Power supply filter',step:'29',name:'470 µF polymer can',svg:canSVG,how:'Aluminium can; one lead is longer.',where:'C2. One hole has a “+” next to it.',dir:'<b>Polarised.</b> Long lead into the “+” hole; the blue mark on top faces the board edge. Backwards = damaged part.',why:'Big energy tank for slow, large dips in supply voltage.'},
+ {id:'L1',grp:'Power supply filter',step:'30',name:'Ferrite bead',svg:beadSVG,how:'Dark grey cylinder on a wire.',where:'L1.',dir:'Either way round.',why:'Not a capacitor: an inductor that blocks high-frequency noise so the analog supply (AVDD) stays smooth.'},
+ {id:'R6',grp:'Voltage divider',step:'32',name:'59 kΩ 1%',svg:resSVG([5,9,0,2,1]),how:'Bands green, white, black, red, brown.',where:'R6.',dir:'Either way round.',why:'Half of the divider that lets the microcontroller measure its own supply.'},
+ {id:'R7',grp:'Voltage divider',step:'33',name:'150 kΩ 1%',svg:resSVG([1,5,0,3,1]),how:'Bands brown, green, black, orange, brown.',where:'R7.',dir:'Either way round.',why:'Other half of the divider. Large values waste little current, which helps backup time.'},
+ {id:'C9',grp:'Voltage divider',step:'34',name:'1 nF ceramic',svg:blobSVG('102','#f2d34a'),how:'Yellow blob marked 102 (10 + 00 pF = 1 nF).',where:'C9.',dir:'Either way round.',why:'Holds TP2 steady while the microcontroller’s ADC samples it, since the large divider resistors cannot supply that charge quickly.'}];
+let curPart='C7';
+function renderParts(){$('#parts').innerHTML=PARTS.map(p=>`<button type="button" class="part${p.id===curPart?' on':''}" data-p="${p.id}"><span class="eyebrow">Step ${p.step} · ${p.grp}</span>${p.svg}<b>${p.id}</b><span>${p.name}</span></button>`).join('');
+  document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{curPart=b.dataset.p;renderParts()});
+  const p=PARTS.find(x=>x.id===curPart);
+  $('#partDetail').innerHTML=`<h3>${p.id} · ${p.name} <span class="pill${/Polarised/.test(p.dir)?' warn':''}">${/Polarised/.test(p.dir)?'polarised':'no polarity'}</span></h3>
+  <dl class="readout"><dt>Recognise</dt><dd style="font-family:var(--f-body)">${p.how}</dd><dt>Location</dt><dd style="font-family:var(--f-body)">${p.where}</dd><dt>Orientation</dt><dd style="font-family:var(--f-body)">${p.dir}</dd><dt>Purpose</dt><dd style="font-family:var(--f-body)">${p.why}</dd></dl>
+  <p class="small">After each group: solder, then trim the leads (steps 26, 31, 35).</p>`}
+renderParts();
+const s5={byp:1};
+document.querySelectorAll('[data-byp]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-byp]').forEach(x=>x.classList.toggle('on',x===b));s5.byp=+b.dataset.byp});
+anim($('#cv5'),t=>{const cv=$('#cv5');const {ctx,w,h}=fit(cv);if(!w)return;ctx.fillStyle=P.scr;ctx.fillRect(0,0,w,h);
+  const off=reduce?0:t*0.6;const pulse=u=>{const f=((u%1)+1)%1;return f<0.08?1:0};
+  ctx.strokeStyle=P.grid;ctx.setLineDash([1,3]);ctx.beginPath();for(let i=1;i<10;i++){ctx.moveTo(i*w/10,0);ctx.lineTo(i*w/10,h)}ctx.stroke();ctx.setLineDash([]);
+  ctx.strokeStyle=P.c1s;ctx.lineWidth=2;ctx.beginPath();for(let x=0;x<=w;x++){const u=x/w*4+off;const y=h*0.32-pulse(u)*h*0.2;x?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
+  const depth=s5.byp?0.025:0.22;ctx.strokeStyle=P.c2s;ctx.beginPath();for(let x=0;x<=w;x++){const u=x/w*4+off;const f=((u%1)+1)%1;const d=f<0.08?f/0.08:Math.exp(-(f-0.08)*7);const y=h*0.62+d*depth*h;x?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
+  ctx.font=`11px ${P['f-mono']}`;ctx.fillStyle=P.c2s;ctx.textAlign='left';ctx.fillText(s5.byp?'5 V, steady':'5 V, dips on every burst',6,h*0.62-8)});
+function codeOut(){const c=String($('#code').value);if(!/^\d{3}$/.test(c)){$('#codeOut').textContent='Enter three digits';return}
+  const pf=(+c.slice(0,2))*Math.pow(10,+c[2]);$('#codeOut').textContent=`= ${c.slice(0,2)} × 10^${c[2]} pF = ${fmt(pf*1e-12,'F')}`}
+$('#code').oninput=codeOut;codeOut();
+
+/* ---------- 6. Divider ---------- */
+function dv(){const a=+$('#avdd').value,m=+$('#tp2').value,top=$('#topo').value==='r6'?59e3:150e3,bot=$('#topo').value==='r6'?150e3:59e3;
+  $('#dvTop').textContent=top===59e3?'R6 59 kΩ':'R7 150 kΩ';$('#dvBot').textContent=bot===59e3?'R6 59 kΩ':'R7 150 kΩ';
+  const r=bot/(top+bot),exp=a*r,err=(m-exp)/exp*100,amax=4.3/r;
+  $('#dvOut').innerHTML=`<dt>ratio</dt><dd>${fmt(bot,'Ω')} / ${fmt(top+bot,'Ω')} = ${r.toFixed(4)}</dd><dt>expected TP2</dt><dd class="hot">${isFinite(exp)?exp.toFixed(3)+' V':'—'}</dd><dt>% error</dt><dd class="hot">${isFinite(err)&&m?err.toFixed(2)+' %':'—'}</dd><dt>AVDD when TP2 = 4.3 V</dt><dd class="hot">${amax.toFixed(2)} V</dd>`}
+['#avdd','#tp2','#topo'].forEach(s=>$(s).addEventListener('input',dv));dv();
+
+addEventListener('resize',()=>{drawS3();drawBode()});
+drawS3();drawBode();
+requestAnimationFrame(loop);
+})();
+</script>
+
+</html>
