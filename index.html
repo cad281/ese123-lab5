@@ -125,6 +125,13 @@ ol.flow{margin:0;padding-left:1.3em;display:grid;gap:6px;max-width:68ch}
 .psu .big{font-size:1.7rem;color:#5ee08a;font-variant-numeric:tabular-nums}
 .psu .st{font-size:.8rem;padding:2px 8px;border-radius:4px;background:#26323f}
 .psu .st.cc{background:#c2410c;color:#fff}.psu .st.cv{background:#17803d;color:#fff}.psu .st.off{background:#3a4552;color:#aab}
+.plist{display:grid;gap:10px;margin:0;padding:0;list-style:none;counter-reset:pq}
+.plist li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:grid;gap:8px;counter-increment:pq}
+.plist .q::before{content:"Q" counter(pq) ". ";font-family:var(--f-mono);color:var(--accent);font-weight:600}
+.plist details summary{cursor:pointer;font-family:var(--f-mono);font-size:.85rem;color:var(--accent)}
+.plist details[open] summary{margin-bottom:6px}
+.plist .ans{font-weight:700}
+.plist .work{font-size:.92rem;color:var(--muted)}
 </style>
 
 <div class="wrap">
@@ -141,6 +148,7 @@ ol.flow{margin:0;padding-left:1.3em;display:grid;gap:6px;max-width:68ch}
     <a href="#build">5 · Building the board</a>
     <a href="#dc">6 · DC check with the DMM</a>
     <a href="#formulas">7 · Formula sheet</a>
+    <a href="#practice">8 · Practice questions</a>
   </nav>
 </header>
 
@@ -442,6 +450,12 @@ ol.flow{margin:0;padding-left:1.3em;display:grid;gap:6px;max-width:68ch}
   <div class="steps-tag">Keep this open during the lab</div>
   <h2>7 · Formula sheet: what, when, and an example</h2>
   <div class="fgrid" id="formulasHost"></div>
+</section>
+<section class="lab" id="practice">
+  <div class="steps-tag">Self-check · same concepts as the Brightspace quiz, new numbers</div>
+  <h2>8 · Practice questions</h2>
+  <p>Try each one before opening the answer. These are not the real quiz questions; they use the same formulas and ideas with different numbers.</p>
+  <ol class="plist" id="practiceHost"></ol>
 </section>
 </div>
 
@@ -782,6 +796,9 @@ drawS3();drawBode();
 
 function renderFormulas(el,list){el.innerHTML=list.map(f=>`<div class="fcard"><h3>${f.name}</h3><div class="eq">${f.eq}</div><p class="when"><b>Use it when:</b> ${f.when}</p>${f.vars?`<dl class="vars">${f.vars.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`:''}${f.ex?`<p class="ex"><b>Example</b>${f.ex}</p>`:''}</div>`).join('')}
 renderFormulas($('#formulasHost'),[{"name": "Capacitive reactance", "eq": "X<sub>C</sub> = 1 / (2π f C)", "when": "Finding how much a capacitor “resists” AC at a given frequency. Small at high f (like a wire), huge at low f (like an open switch).", "vars": [["f", "frequency (Hz)"], ["C", "capacitance (F)"]], "ex": "100 nF at 3 kHz → 1/(2π·3000·100n) = 531 Ω;  at 1 Hz → 1.59 MΩ."}, {"name": "Time constant", "eq": "τ = R · C", "when": "Judging how fast an RC circuit charges. Compare τ with the period T of the signal (pre-lab).", "ex": "1 kΩ × 1 µF = 1 ms. T = 100 ms ≫ τ → V<sub>C</sub> follows the input."}, {"name": "Corner (crossover) frequency", "eq": "f<sub>c</sub> = 1 / (2π R C)", "when": "The frequency where X<sub>C</sub> = R: the boundary between “capacitor acts open” and “capacitor acts like a wire”.", "ex": "150 kΩ, 100 nF → 10.6 Hz. Same parts give the ~10 Hz op-amp filter in Lab 6."}, {"name": "Low-frequency limit of the lab filter", "eq": "V<sub>mid</sub> = V<sub>top</sub> · R2 / (R1 + R2)", "when": "Very low f, when C1 is effectively open: just a resistor divider.", "ex": "2 V × 4.75k / 154.75k = 61 mV rms."}, {"name": "High-frequency limit of the lab filter", "eq": "V<sub>mid</sub> ≈ V<sub>top</sub>", "when": "High f, when C1 shorts out R1.", "ex": "At 3 kHz V<sub>mid</sub> ≈ 1.99 V rms of 2 V."}, {"name": "Full transfer function of the lab filter", "eq": "V<sub>mid</sub>/V<sub>top</sub> = R2 / (R2 + Z1),  Z1 = R1 / (1 + j2πf R1 C1)", "when": "Predicting V<sub>mid</sub> and phase at any frequency (the theory table on the page).", "ex": "At 900 Hz: |H| = 0.934 → 1.87 V rms, mid leads by 20°."}, {"name": "RMS, peak and peak-to-peak (sine)", "eq": "V<sub>rms</sub> = V<sub>p</sub>/√2,   V<sub>pp</sub> = 2V<sub>p</sub> = 2√2 V<sub>rms</sub>", "when": "Converting between the generator setting, cursor ΔY and the AC RMS measurement.", "ex": "2 V rms → 2.83 V peak → 5.66 Vpp."}, {"name": "Generator into a high-impedance load", "eq": "V<sub>actual</sub> ≈ 2 × V<sub>set</sub>", "when": "Explaining why 1 V rms set reads ~2 V rms on the scope (50 Ω assumption, see Lab 4).", "ex": "Set 1 V rms → scope AC RMS ≈ 2.0 V."}, {"name": "Frequency from period", "eq": "f = 1 / T  (scope: 1/ΔX)", "when": "Counting boxes or using X cursors to get the period, then frequency.", "ex": "ΔX = 1.111 ms → 900 Hz."}, {"name": "Phase from a time shift", "eq": "φ = 360° × Δt / T", "when": "Estimating phase by hand from the time between matching zero crossings of CH1 and CH2.", "ex": "Δt = 62 µs at 900 Hz (T = 1.111 ms) → 20°."}, {"name": "Choosing time/div manually", "eq": "time/div ≈ (cycles wanted × T) / 10", "when": "Low frequencies where Autoscale fails (below ~20 Hz).", "ex": "3 cycles of 3 Hz → 3 × 0.333 s / 10 ≈ 100 ms/div."}, {"name": "Capacitor code", "eq": "C = (first two digits) × 10^(third digit) pF", "when": "Identifying ceramic capacitors before soldering.", "ex": "104 → 10 × 10⁴ pF = 100 nF;  106 → 10 µF;  102 → 1 nF."}, {"name": "Voltage divider (TP2)", "eq": "V<sub>TP2</sub> = AVDD · R<sub>bottom</sub> / (R<sub>top</sub> + R<sub>bottom</sub>)\nAVDD<sub>max</sub> = 4.3 V × (R<sub>top</sub> + R<sub>bottom</sub>) / R<sub>bottom</sub>", "when": "Question 4. Check the schematic for which of R6/R7 is on the AVDD side.", "ex": "R6 59k on top, R7 150k bottom: 5.00 V → 3.589 V; AVDD<sub>max</sub> = 5.99 V."}, {"name": "Percent error", "eq": "(measured − calculated) / calculated × 100%", "when": "Question 4b and every theory-vs-measurement comparison.", "ex": "3.57 V measured vs 3.589 V → −0.5%."}]);
+
+function renderPractice(el,list){el.innerHTML=list.map(p=>`<li><div class="q">${p.q}</div><details><summary>Show answer</summary><div class="ans">${p.a}</div><div class="work">${p.work}</div></details></li>`).join('')}
+renderPractice($('#practiceHost'),[{"q": "What is the reactance of a 220 nF capacitor at 500 Hz?", "a": "1.45 kΩ", "work": "X<sub>C</sub> = 1/(2π × 500 × 220×10⁻⁹) = 1/(6.91×10⁻⁴) = 1447 Ω."}, {"q": "At what frequency does a 47 nF capacitor have X<sub>C</sub> = 10 kΩ?", "a": "339 Hz", "work": "f = 1/(2π X<sub>C</sub> C) = 1/(2π × 10⁴ × 47×10⁻⁹) = 339 Hz."}, {"q": "What is the time constant of 4.7 kΩ and 2.2 µF?", "a": "10.3 ms", "work": "τ = RC = 4700 × 2.2×10⁻⁶ = 0.01034 s."}, {"q": "CH2 crosses zero 0.25 ms before CH1 on a 500 Hz signal. What is the phase difference?", "a": "45° (CH2 leads)", "work": "T = 1/500 = 2 ms. φ = 360° × 0.25/2 = 45°."}, {"q": "The scope reads AC RMS = 1.5 V for a sine. What Vpp should the cursors show?", "a": "4.24 V", "work": "V<sub>pp</sub> = 2√2 × V<sub>rms</sub> = 2.828 × 1.5 = 4.24 V."}, {"q": "The lab filter is rebuilt with R1 = 100 kΩ, R2 = 10 kΩ, C1 = 100 nF and 2 V rms at top. What is V<sub>mid</sub> at very low frequency, and where is the R1–C1 crossover?", "a": "0.182 V rms; 15.9 Hz", "work": "Low f: C1 open → 2 × 10k/110k = 0.182 V. Crossover where X<sub>C</sub> = R1: f = 1/(2π × 100k × 100n) = 15.9 Hz."}, {"q": "Autoscale fails on a 5 Hz signal. You want about 4 cycles on screen. What time/div?", "a": "100 ms/div (80 ms minimum)", "work": "4 × 0.2 s / 10 divisions = 80 ms/div. Nearest knob setting at or above that: 100 ms/div."}, {"q": "Decode the capacitor markings 473 and 225.", "a": "47 nF and 2.2 µF", "work": "473 = 47 × 10³ pF = 47 000 pF = 47 nF. 225 = 22 × 10⁵ pF = 2.2 µF."}, {"q": "A divider has 100 kΩ on top and 47 kΩ on the bottom. With AVDD = 5.1 V, what is TP? What AVDD would make TP = 4.3 V?", "a": "1.63 V; 13.4 V", "work": "TP = 5.1 × 47/147 = 1.631 V. AVDD = 4.3 × 147/47 = 13.45 V."}]);
 requestAnimationFrame(loop);
 })();
 </script>

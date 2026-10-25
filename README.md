@@ -211,6 +211,83 @@ AVDDmax = 4.3 V × (Rtop + Rbottom) / Rbottom
 **Example:** 3.57 V measured vs 3.589 V → −0.5%.
 
 
+## Practice questions
+
+Same concepts and formulas as the Brightspace quiz, with new numbers (not the real quiz questions). Try each one before opening the answer.
+
+**Q1.** What is the reactance of a 220 nF capacitor at 500 Hz?
+
+<details><summary>Show answer</summary>
+
+**1.45 kΩ**. XC = 1/(2π × 500 × 220×10⁻⁹) = 1/(6.91×10⁻⁴) = 1447 Ω.
+
+</details>
+
+**Q2.** At what frequency does a 47 nF capacitor have XC = 10 kΩ?
+
+<details><summary>Show answer</summary>
+
+**339 Hz**. f = 1/(2π XC C) = 1/(2π × 10⁴ × 47×10⁻⁹) = 339 Hz.
+
+</details>
+
+**Q3.** What is the time constant of 4.7 kΩ and 2.2 µF?
+
+<details><summary>Show answer</summary>
+
+**10.3 ms**. τ = RC = 4700 × 2.2×10⁻⁶ = 0.01034 s.
+
+</details>
+
+**Q4.** CH2 crosses zero 0.25 ms before CH1 on a 500 Hz signal. What is the phase difference?
+
+<details><summary>Show answer</summary>
+
+**45° (CH2 leads)**. T = 1/500 = 2 ms. φ = 360° × 0.25/2 = 45°.
+
+</details>
+
+**Q5.** The scope reads AC RMS = 1.5 V for a sine. What Vpp should the cursors show?
+
+<details><summary>Show answer</summary>
+
+**4.24 V**. Vpp = 2√2 × Vrms = 2.828 × 1.5 = 4.24 V.
+
+</details>
+
+**Q6.** The lab filter is rebuilt with R1 = 100 kΩ, R2 = 10 kΩ, C1 = 100 nF and 2 V rms at top. What is Vmid at very low frequency, and where is the R1–C1 crossover?
+
+<details><summary>Show answer</summary>
+
+**0.182 V rms; 15.9 Hz**. Low f: C1 open → 2 × 10k/110k = 0.182 V. Crossover where XC = R1: f = 1/(2π × 100k × 100n) = 15.9 Hz.
+
+</details>
+
+**Q7.** Autoscale fails on a 5 Hz signal. You want about 4 cycles on screen. What time/div?
+
+<details><summary>Show answer</summary>
+
+**100 ms/div (80 ms minimum)**. 4 × 0.2 s / 10 divisions = 80 ms/div. Nearest knob setting at or above that: 100 ms/div.
+
+</details>
+
+**Q8.** Decode the capacitor markings 473 and 225.
+
+<details><summary>Show answer</summary>
+
+**47 nF and 2.2 µF**. 473 = 47 × 10³ pF = 47 000 pF = 47 nF. 225 = 22 × 10⁵ pF = 2.2 µF.
+
+</details>
+
+**Q9.** A divider has 100 kΩ on top and 47 kΩ on the bottom. With AVDD = 5.1 V, what is TP? What AVDD would make TP = 4.3 V?
+
+<details><summary>Show answer</summary>
+
+**1.63 V; 13.4 V**. TP = 5.1 × 47/147 = 1.631 V. AVDD = 4.3 × 147/47 = 13.45 V.
+
+</details>
+
+
 ## Report guide (Google Sheets → PDF)
 
 1. Table: Vpp, period, frequency × (counting boxes, cursors, automatic).
